@@ -1,3 +1,5 @@
+import time
+
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -12,15 +14,20 @@ from typing import List
 
 from src.utils.logger_config import logger
 from src.utils.song_files_handler import format_song_name
+from src.params import CONVERTER_URL
 
 
-def config_driver(converter_url: str):
+def config_driver():
     options = ChromeOptions()
     # options.add_argument('headless')
     driver = Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    driver.get(converter_url)
+    load_page(driver=driver)
 
     return driver
+
+
+def load_page(driver):
+    driver.get(CONVERTER_URL)
 
 
 def download_songs(driver, songs: List[str]):
@@ -30,13 +37,13 @@ def download_songs(driver, songs: List[str]):
         logger.info(f'Beginning process for song: {processed_song_name}')
 
         song_frame, song_name = get_song_frame(driver=driver, song=song)
-        download_button, next_button = get_download_button(driver=driver, song_frame=song_frame)
+        download_button = get_download_button(driver=driver, song_frame=song_frame)
         download_button.click()
 
         logger.info(f'Downloaded: {processed_song_name}')
 
-        next_button.click()
         clear_popup_tabs(driver=driver)
+        load_page(driver)
 
         downloaded_song_names.append(song_name)
 
@@ -68,10 +75,9 @@ def get_download_button(driver, song_frame):
     song_download_div = song_frame.find_element(by=By.CLASS_NAME, value='download')
     song_download_div.click()
     download_button = get_loaded_page(driver=driver, by=By.ID, by_value='download')
-    next_button = driver.find_element(by=By.LINK_TEXT, value='Convert next')
 
     logger.info('Got download button')
-    return download_button, next_button
+    return download_button
 
 
 def get_loaded_page(driver, by, by_value, timeout=10):
@@ -92,3 +98,5 @@ def clear_popup_tabs(driver):
         driver.switch_to.window(open_tabs[-1])
         driver.close()
         open_tabs.pop(-1)
+
+    driver.switch_to.window(open_tabs[0])
