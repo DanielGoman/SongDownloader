@@ -9,7 +9,7 @@ logger.setLevel(logging.DEBUG)
 
 def setup_logger():
     """
-    Configures the logger with 3 handlers: debug, info, and metrics
+    Configures the logger with 2 handlers: debug, info
     """
     # create logging dir if it doesn't exist
     os.makedirs(LOGGING_DIR, exist_ok=True)

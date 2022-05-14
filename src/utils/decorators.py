@@ -5,6 +5,15 @@ from src.utils.consts import SECONDS_PER_MINUTE
 
 
 def timer(func):
+    """A timer wrapper function, counts the run time of the given function and registers it in the log
+
+    Args:
+        func: the function to run and to count the runtime of
+
+    Returns:
+        time_wrapper - the decorator function
+
+    """
     def timer_wrapper(*args, **kwargs):
 
         logger.info(f'Beginning function {func.__name__}')
