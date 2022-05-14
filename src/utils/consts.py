@@ -1,0 +1,4 @@
+SONG_FILE_FORMAT = 'mp3'
+DOWNLOADS_DIR_PATH = 'C:\\Users\\GoMaN\\Downloads'
+
+SECONDS_PER_MINUTE = 60

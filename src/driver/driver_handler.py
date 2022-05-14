@@ -1,5 +1,3 @@
-import time
-
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -13,13 +11,15 @@ from webdriver_manager.chrome import ChromeDriverManager
 from typing import List
 
 from src.utils.logger_config import logger
-from src.utils.song_files_handler import format_song_name
+from src.utils.song_files_handler import format_song_name, wait_till_download_is_finished
+from src.utils.decorators import timer
 from src.params import CONVERTER_URL
 
 
-def config_driver():
+def config_driver(is_hidden_run):
     options = ChromeOptions()
-    # options.add_argument('headless')
+    if is_hidden_run:
+        options.add_argument('headless')
     driver = Chrome(service=Service(ChromeDriverManager().install()), options=options)
     load_page(driver=driver)
 
@@ -30,24 +30,26 @@ def load_page(driver):
     driver.get(CONVERTER_URL)
 
 
+@timer
 def download_songs(driver, songs: List[str]):
     downloaded_song_names = []
-    for song in songs:
+    num_songs = len(songs)
+    for index, song in enumerate(songs):
         processed_song_name = format_song_name(song=song)
-        logger.info(f'Beginning process for song: {processed_song_name}')
+        logger.info(f'({index}/{num_songs}) Beginning process for song: {processed_song_name}')
 
         song_frame, song_name = get_song_frame(driver=driver, song=song)
         download_button = get_download_button(driver=driver, song_frame=song_frame)
         download_button.click()
 
-        logger.info(f'Downloaded: {processed_song_name}')
+        logger.info(f'({index}/{num_songs}) Downloaded: {processed_song_name}')
 
         clear_popup_tabs(driver=driver)
         load_page(driver)
 
         downloaded_song_names.append(song_name)
 
-    return downloaded_song_names
+    wait_till_download_is_finished(downloaded_song_names=downloaded_song_names)
 
 
 def get_song_frame(driver, song: str):
@@ -57,7 +59,7 @@ def get_song_frame(driver, song: str):
     song_name_div = song_frame.find_element(by=By.CLASS_NAME, value='name')
     song_name = song_name_div.text
 
-    logger.info('Got song frame')
+    logger.debug('Got song frame')
     return song_frame, song_name
 
 
@@ -67,7 +69,7 @@ def get_search(driver, search_id: str, target: str):
     search.send_keys(target)
     search.send_keys(Keys.RETURN)
 
-    logger.info('Got search results')
+    logger.debug('Got search results')
     return search
 
 
@@ -76,7 +78,7 @@ def get_download_button(driver, song_frame):
     song_download_div.click()
     download_button = get_loaded_page(driver=driver, by=By.ID, by_value='download')
 
-    logger.info('Got download button')
+    logger.debug('Got download button')
     return download_button
 
 
