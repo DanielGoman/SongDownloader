@@ -1,3 +1,5 @@
+import time
+
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -14,7 +16,7 @@ from src.utils.decorators import timer
 from src.utils.logger_config import logger
 from src.driver.consts import TIMEOUT_DELTA
 from src.utils.song_files_handler import format_song_name, wait_till_download_is_finished
-from src.params import CONVERTER_URL, DOWNLOADS_DIR_PATH
+from src.params import CONVERTER_URL, DOWNLOADS_DIR_PATH, PAGE_TIMEOUT, NUM_GET_PAGE_ATTEMPTS
 
 
 def config_driver(is_hidden_run: bool):
@@ -29,6 +31,7 @@ def config_driver(is_hidden_run: bool):
 
     """
     options = ChromeOptions()
+    options.add_argument("--log-level=3")
     if is_hidden_run:
         options.headless = True
         options.add_argument('--no-sandbox')
@@ -38,6 +41,7 @@ def config_driver(is_hidden_run: bool):
         options.experimental_options["prefs"] = preferences
 
     driver = Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver.set_page_load_timeout(time_to_wait=PAGE_TIMEOUT)
     load_page(driver=driver)
 
     return driver
@@ -50,11 +54,19 @@ def load_page(driver):
         driver: the driver of this run
 
     """
-    driver.get(CONVERTER_URL)
+    for i in range(NUM_GET_PAGE_ATTEMPTS):
+        try:
+            driver.get(CONVERTER_URL)
+            return
+        except TimeoutException as error:
+            logger.debug(f"Couldn't get page - {CONVERTER_URL} - {str(error)}")
+
+    logger.debug(f"Failed {NUM_GET_PAGE_ATTEMPTS} attempts to reach {CONVERTER_URL} - exiting")
+    exit(-1)
 
 
 @timer
-def download_songs(driver, songs: List[str]):
+def download_songs(driver, songs: List[str]) -> List[str]:
     """Iteratively downloads all the songs in the list of songs
 
     Args:
@@ -79,7 +91,11 @@ def download_songs(driver, songs: List[str]):
 
         downloaded_song_names.append(song_name)
 
-    wait_till_download_is_finished(downloaded_song_names=downloaded_song_names)
+        time.sleep(5)
+
+    downloaded_songs = wait_till_download_is_finished(downloaded_song_names=downloaded_song_names)
+
+    return downloaded_songs
 
 
 def get_search(driver, search_id: str, target_song: str):
