@@ -19,7 +19,7 @@ def timer(func):
         logger.info(f'Beginning function {func.__name__}')
         start_time = time.time()
 
-        func(*args, **kwargs)
+        res = func(*args, **kwargs)
 
         end_time = time.time()
 
@@ -28,5 +28,7 @@ def timer(func):
         elapsed_seconds = int(elapsed_time % SECONDS_PER_MINUTE)
 
         logger.info(f'Finished function {func.__name__} in {elapsed_minutes} minutes and {elapsed_seconds} seconds')
+
+        return res
 
     return timer_wrapper
